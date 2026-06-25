@@ -26,6 +26,7 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use App\Filament\Actions\CreateInvoiceAction;
 
 class QuotationResource extends Resource
 {
@@ -366,6 +367,7 @@ class QuotationResource extends Resource
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
+                CreateInvoiceAction::make(),
                 DeleteAction::make(),
             ])
             ->bulkActions([

@@ -13,6 +13,7 @@ use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\FontWeight;
+use App\Filament\Actions\CreateInvoiceAction;
 
 class ViewQuotation extends ViewRecord
 {
@@ -126,6 +127,7 @@ class ViewQuotation extends ViewRecord
         return [
             Actions\EditAction::make(),
             Actions\DeleteAction::make(),
+            CreateInvoiceAction::make(),
             Actions\Action::make('download_pdf')
                 ->label(__('Download PDF'))
                 ->icon('heroicon-o-arrow-down-tray')
