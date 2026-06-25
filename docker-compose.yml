@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bookshop-app
+    ports:
+      - "8000:80"
+    volumes:
+      - .:/var/www/html
+    depends_on:
+      - db
+    networks:
+      - bookshop
+
+  db:
+    image: mysql:8.0
+    container_name: bookshop-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: bookshop
+      MYSQL_ROOT_PASSWORD: bookshop
+    ports:
+      - "3306:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - bookshop
+
+  phpmyadmin:
+    image: phpmyadmin
+    container_name: bookshop-phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: db
+      MYSQL_ROOT_PASSWORD: secret
+    depends_on:
+      - db
+    networks:
+      - bookshop
+
+networks:
+  bookshop:
+    driver: bridge
+
+volumes:
+  dbdata:
