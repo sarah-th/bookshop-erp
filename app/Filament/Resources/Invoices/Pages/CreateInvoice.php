@@ -5,6 +5,7 @@ use App\Filament\Resources\Invoices\InvoiceResource;
 use App\Models\Invoice;
 use App\Models\Quotation;
 use Filament\Resources\Pages\CreateRecord;
+use ValidatesInvoiceCurrency;
 
 class CreateInvoice extends CreateRecord
 {
@@ -47,6 +48,16 @@ class CreateInvoice extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
+        if (! InvoiceResource::validateCurrency($data['items'] ?? [])) {
+            Notification::make()
+                ->title(__('Currency Mismatch'))
+                ->body(__('All books in an invoice must have the same currency.'))
+                ->danger()
+                ->send();
+
+            $this->halt();
+        }
+
         $this->itemsData = $data['items'] ?? [];
         unset($data['items']);
         return $data;

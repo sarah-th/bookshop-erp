@@ -1,16 +1,16 @@
 <?php
-namespace App\Filament\Resources\Invoices;
+namespace App\Filament\Resources\PurchaseInvoices;
 
-use App\Filament\Resources\Invoices\Pages;
+use App\Filament\Resources\PurchaseInvoices\Pages;
+use App\Filament\Support\FilamentAuth;
 use App\Models\Book;
-use App\Models\Invoice;
+use App\Models\PurchaseInvoice;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -26,18 +26,16 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use HasAdminOnlyDelete;
-use App\Filament\Support\FilamentAuth;
 
-class InvoiceResource extends Resource
+class PurchaseInvoiceResource extends Resource
 {
-    protected static ?string $model = Invoice::class;
-    protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentCheck;
+    protected static ?string $model = PurchaseInvoice::class;
+    protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentArrowDown;
 
-    public static function getModelLabel(): string       { return __('Invoice'); }
-    public static function getPluralModelLabel(): string  { return __('Invoices'); }
-    public static function getNavigationLabel(): string   { return __('Invoices'); }
-    public static function getNavigationGroup(): string   { return __('Sales'); }
+    public static function getModelLabel(): string       { return __('Purchase Invoice'); }
+    public static function getPluralModelLabel(): string  { return __('Purchase Invoices'); }
+    public static function getNavigationLabel(): string   { return __('Purchase Invoices'); }
+    public static function getNavigationGroup(): string   { return __('Purchases'); }
 
     public static function getCurrencySymbol(Get $get): ?string
     {
@@ -65,21 +63,19 @@ class InvoiceResource extends Resource
         return $schema
             ->columns(1)
             ->components([
-                Section::make(__('Invoice Information'))
+                Section::make(__('Purchase Invoice Information'))
                     ->schema([
-                        Hidden::make('quotation_id'),
-
                         TextInput::make('invoice_number')
                             ->label(__('Invoice Number'))
-                            ->default(fn () => Invoice::generateNumber())
+                            ->default(fn () => PurchaseInvoice::generateNumber())
                             ->required()
                             ->unique(ignoreRecord: true)
                             ->disabled()
                             ->dehydrated(),
 
-                        Select::make('client_id')
-                            ->label(__('Client'))
-                            ->options(fn () => \App\Models\Client::pluck('name', 'id'))
+                        Select::make('supplier_id')
+                            ->label(__('Supplier'))
+                            ->options(fn () => \App\Models\Supplier::pluck('name', 'id'))
                             ->searchable()
                             ->preload()
                             ->required()
@@ -99,7 +95,7 @@ class InvoiceResource extends Resource
                     ->columns(2)
                     ->columnSpanFull(),
 
-                Section::make(__('Invoice Items'))
+                Section::make(__('Purchase Invoice Items'))
                     ->schema([
                         Repeater::make('items')
                             ->label('')
@@ -117,15 +113,13 @@ class InvoiceResource extends Resource
                                     ->hint(fn ($state) => $state
                                         ? 'Stock: ' . (Book::find($state)?->current_quantity ?? 0)
                                         : null)
-                                    ->hintColor(fn ($state) => $state && (Book::find($state)?->current_quantity ?? 0) === 0
-                                        ? 'danger'
-                                        : 'success')
+                                    ->hintColor('info')
                                     ->afterStateUpdated(function (Set $set, Get $get, $state) {
                                         if (! $state) return;
 
                                         $book = Book::find($state);
 
-                                        // Collect currency IDs from all other items
+                                        // Validate same currency across all items
                                         $items = $get('../../items') ?? [];
                                         $existingCurrencyIds = collect($items)
                                             ->filter(fn ($item) => ! empty($item['book_id'])
@@ -144,7 +138,7 @@ class InvoiceResource extends Resource
 
                                             Notification::make()
                                                 ->title(__('Currency Mismatch'))
-                                                ->body(__('All books in an invoice must have the same currency.'))
+                                                ->body(__('All books in a purchase invoice must have the same currency.'))
                                                 ->danger()
                                                 ->send();
 
@@ -164,14 +158,6 @@ class InvoiceResource extends Resource
                                     ->minValue(1)
                                     ->live()
                                     ->afterStateUpdated(fn (Get $get, Set $set) => self::updateItemNetValue($get, $set))
-                                    ->rules([
-                                        fn (Get $get): \Closure => function (string $attribute, $value, \Closure $fail) use ($get) {
-                                            $book = Book::find($get('book_id'));
-                                            if ($book && (int) $value > $book->current_quantity) {
-                                                $fail("Only {$book->current_quantity} copies of \"{$book->name}\" in stock.");
-                                            }
-                                        },
-                                    ])
                                     ->columnSpan(1),
 
                                 TextInput::make('unit_price')
@@ -270,7 +256,7 @@ class InvoiceResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
-            ->query(Invoice::query()->with('items.book.currency'))
+            ->query(PurchaseInvoice::query()->with('items.book.currency'))
             ->columns([
                 TextColumn::make('id')->label('#')->sortable(),
 
@@ -278,20 +264,20 @@ class InvoiceResource extends Resource
                     ->label(__('Invoice Number'))
                     ->searchable()
                     ->sortable()
-                    ->url(fn ($record) => InvoiceResource::getUrl('view', ['record' => $record])),
+                    ->url(fn ($record) => PurchaseInvoiceResource::getUrl('view', ['record' => $record])),
 
-                TextColumn::make('client.name')
-                    ->label(__('Client'))
-                    ->searchable()
-                    ->sortable(),
-
-                TextColumn::make('quotation.quotation_number')
-                    ->label(__('From Quotation'))
+                TextColumn::make('supplier.name')
+                    ->label(__('Supplier'))
                     ->searchable()
                     ->sortable(),
 
                 TextColumn::make('date')
                     ->label(__('Date'))
+                    ->date()
+                    ->sortable(),
+
+                TextColumn::make('due_date')
+                    ->label(__('Due Date'))
                     ->date()
                     ->sortable(),
 
@@ -306,17 +292,21 @@ class InvoiceResource extends Resource
                     }),
             ])
             ->filters([
-                SelectFilter::make('client_id')
-                    ->label(__('Client'))
-                    ->relationship('client', 'name'),
+                SelectFilter::make('supplier_id')
+                    ->label(__('Supplier'))
+                    ->relationship('supplier', 'name'),
             ])
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
-                DeleteAction::make()->visible(fn () => FilamentAuth::isAdmin()),
+                DeleteAction::make()
+                    ->visible(fn () => FilamentAuth::isAdmin()),
             ])
             ->bulkActions([
-                BulkActionGroup::make([DeleteBulkAction::make()])->visible(fn () => FilamentAuth::isAdmin()),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make()
+                        ->visible(fn () => FilamentAuth::isAdmin()),
+                ]),
             ])
             ->defaultSort('id', 'desc');
     }
@@ -360,10 +350,10 @@ class InvoiceResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListInvoices::route('/'),
-            'create' => Pages\CreateInvoice::route('/create'),
-            'view'   => Pages\ViewInvoice::route('/{record}'),
-            'edit'   => Pages\EditInvoice::route('/{record}/edit'),
+            'index'  => Pages\ListPurchaseInvoices::route('/'),
+            'create' => Pages\CreatePurchaseInvoice::route('/create'),
+            'view'   => Pages\ViewPurchaseInvoice::route('/{record}'),
+            'edit'   => Pages\EditPurchaseInvoice::route('/{record}/edit'),
         ];
     }
 }

@@ -21,6 +21,8 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use HasAdminOnlyDelete;
+use App\Filament\Support\FilamentAuth;
 
 class ClientResource extends Resource
 {
@@ -154,11 +156,11 @@ class ClientResource extends Resource
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
-                DeleteAction::make(),
+                DeleteAction::make()->visible(fn () => FilamentAuth::isAdmin()),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()->visible(fn () => FilamentAuth::isAdmin()),
                 ]),
             ]);
     }

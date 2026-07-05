@@ -27,6 +27,8 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use App\Filament\Actions\CreateInvoiceAction;
+use HasAdminOnlyDelete;
+use App\Filament\Support\FilamentAuth;
 
 class QuotationResource extends Resource
 {
@@ -368,11 +370,11 @@ class QuotationResource extends Resource
                 ViewAction::make(),
                 EditAction::make(),
                 CreateInvoiceAction::make(),
-                DeleteAction::make(),
+                DeleteAction::make()->visible(fn () => FilamentAuth::isAdmin()),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()->visible(fn () => FilamentAuth::isAdmin()),
                 ]),
             ])
             ->defaultSort('id', 'desc');

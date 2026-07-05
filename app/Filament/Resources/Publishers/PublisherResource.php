@@ -16,6 +16,8 @@ use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use HasAdminOnlyDelete;
+use App\Filament\Support\FilamentAuth;
 
 class PublisherResource extends Resource
 {
@@ -82,11 +84,11 @@ class PublisherResource extends Resource
             ->recordActions([
                 ViewAction::make(),
                 EditAction::make(),
-                DeleteAction::make(),
+                DeleteAction::make()->visible(fn () => FilamentAuth::isAdmin()),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    DeleteBulkAction::make(),
+                    DeleteBulkAction::make()->visible(fn () => FilamentAuth::isAdmin()),
                 ]),
             ]);
     }

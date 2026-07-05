@@ -14,6 +14,8 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\FontWeight;
 use App\Filament\Actions\CreateInvoiceAction;
+use HasAdminOnlyDelete;
+use App\Filament\Support\FilamentAuth;
 
 class ViewQuotation extends ViewRecord
 {
@@ -126,7 +128,7 @@ class ViewQuotation extends ViewRecord
     {
         return [
             Actions\EditAction::make(),
-            Actions\DeleteAction::make(),
+            Actions\DeleteAction::make()->visible(fn () => FilamentAuth::isAdmin()),
             CreateInvoiceAction::make(),
             Actions\Action::make('download_pdf')
                 ->label(__('Download PDF'))

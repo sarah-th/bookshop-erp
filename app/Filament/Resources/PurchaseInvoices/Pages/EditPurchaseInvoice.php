@@ -1,17 +1,17 @@
 <?php
-namespace App\Filament\Resources\Invoices\Pages;
-
-use App\Filament\Resources\Invoices\InvoiceResource;
+// app/Filament/Resources/PurchaseInvoices/Pages/EditPurchaseInvoice.php
+namespace App\Filament\Resources\PurchaseInvoices\Pages;
+use App\Filament\Resources\PurchaseInvoices\PurchaseInvoiceResource;
 use App\Models\Book;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
-use ValidatesInvoiceCurrency;
 
-class EditInvoice extends EditRecord
+class EditPurchaseInvoice extends EditRecord
 {
-    protected static string $resource = InvoiceResource::class;
+    protected static string $resource = PurchaseInvoiceResource::class;
 
     protected array $itemsData = [];
-    protected array $oldItems = [];
+    protected array $oldItems  = [];
 
     protected function getRedirectUrl(): string
     {
@@ -33,10 +33,10 @@ class EditInvoice extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        if (! InvoiceResource::validateCurrency($data['items'] ?? [])) {
+        if (! PurchaseInvoiceResource::validateCurrency($data['items'] ?? [])) {
             Notification::make()
                 ->title(__('Currency Mismatch'))
-                ->body(__('All books in an invoice must have the same currency.'))
+                ->body(__('All books must have the same currency.'))
                 ->danger()
                 ->send();
 
@@ -55,21 +55,20 @@ class EditInvoice extends EditRecord
 
     protected function afterSave(): void
     {
-        // 1. Restore stock from old items
+        // 1. Reverse old stock increase
         foreach ($this->oldItems as $old) {
-            Book::find($old['book_id'])?->increment('current_quantity', $old['quantity']);
+            Book::find($old['book_id'])?->decrement('current_quantity', $old['quantity']);
         }
 
-        // 2. Delete old items and insert new ones
+        // 2. Replace items
         $this->record->items()->delete();
-
         foreach ($this->itemsData as $item) {
             $this->record->items()->create($item);
         }
 
-        // 3. Decrease stock with new quantities
+        // 3. Apply new stock increase
         foreach ($this->itemsData as $item) {
-            Book::find($item['book_id'])?->decrement('current_quantity', $item['quantity']);
+            Book::find($item['book_id'])?->increment('current_quantity', $item['quantity']);
         }
     }
 }
