@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BookShop</title>
+    <title>Future Book Center</title>
     <style>
         * {
             margin: 0;
@@ -74,10 +74,10 @@
 <body>
     <div class="container">
         <div class="emoji">📚</div>
-        <h1>Welcome to BookShop</h1>
-        <a href="#" class="btn">Start Browsing</a>
+        <h1>Future Book Center</h1>
+        <a href="/admin" class="btn">Login to Admin Panel</a>
         <div class="footer">
-            <p>&copy; {{ date('Y') }} BookShop. All rights reserved.</p>
+            <p>&copy; {{ date('Y') }} Future Book Center. All rights reserved.</p>
         </div>
     </div>
 </body>

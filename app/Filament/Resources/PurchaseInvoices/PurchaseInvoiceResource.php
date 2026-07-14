@@ -276,11 +276,6 @@ class PurchaseInvoiceResource extends Resource
                     ->date()
                     ->sortable(),
 
-                TextColumn::make('due_date')
-                    ->label(__('Due Date'))
-                    ->date()
-                    ->sortable(),
-
                 TextColumn::make('total')
                     ->label(__('Total'))
                     ->sortable()

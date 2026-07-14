@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Models\Quotation;
 use App\Models\Invoice;
+use App\Models\PurchaseInvoice;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 Route::get('/', function () {
@@ -18,3 +19,8 @@ Route::get('/invoice/{invoice}/print', function (Invoice $invoice) {
     $pdf = Pdf::loadView('pdf.invoice', compact('invoice'));
     return $pdf->stream('invoice-' . $invoice->invoice_number . '.pdf');
 })->name('invoice.print');
+
+Route::get('/purchase_invoice/{invoice}/print', function (PurchaseInvoice $invoice) {
+    $pdf = Pdf::loadView('pdf.purchase_invoice', compact('invoice'));
+    return $pdf->stream('invoice-' . $invoice->invoice_number . '.pdf');
+})->name('purchase_invoice.print');
